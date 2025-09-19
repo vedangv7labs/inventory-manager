@@ -42,8 +42,13 @@
             <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Login</h2>
             <form id="login-form" class="space-y-4">
                 <div>
-                    <label for="login-id" class="block text-sm font-medium text-gray-700">Enter User ID</label>
-                    <input type="text" id="login-id" required
+                    <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="login-email" required
+                           class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="login-password" required
                            class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
@@ -163,7 +168,7 @@
                                     <th class="py-3 px-4">Action</th>
                                     <th class="py-3 px-4">Details</th>
                                     <th class="py-3 px-4">User ID</th>
-                                    <th class="py-3 px-4">Image URL</th>
+                                    <th class="py-3 px-4">Given To</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body" class="divide-y divide-gray-200">
@@ -244,18 +249,25 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, setLogLevel, serverTimestamp, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, setLogLevel, serverTimestamp, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
         
         // --- Globals & Initialization ---
         
         // This is a Firestore security rule guardrail
         // Public data MUST be in /artifacts/{appId}/public/data/{collectionName}
         // Private data MUST be in /artifacts/{appId}/users/{userId}/{collectionName}
-        const app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const app_id = 'inventorydd-9f9fa';
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHfWF0jAfLrMGBjHxU24w1GUT56u7vOCI",
+            authDomain: "inventorydd-9f9fa.firebaseapp.com",
+            projectId: "inventorydd-9f9fa",
+            storageBucket: "inventorydd-9f9fa.firebasestorage.app",
+            messagingSenderId: "1065746589625",
+            appId: "1:1065746589625:web:94ca29686957a91ed9f868",
+            measurementId: "G-FM1TDBM48P"
+        };
         
         // Set Firebase debug logs
         setLogLevel('debug');
@@ -275,7 +287,8 @@
         const loadingDiv = document.getElementById('loading');
         const loginPageDiv = document.getElementById('login-page');
         const loginForm = document.getElementById('login-form');
-        const loginIdInput = document.getElementById('login-id');
+        const loginEmailInput = document.getElementById('login-email');
+        const loginPasswordInput = document.getElementById('login-password');
         const mainContentDiv = document.getElementById('main-content');
         const userIdSpan = document.getElementById('user-id');
         const logoutButton = document.getElementById('logout-button');
@@ -425,9 +438,8 @@
                                 ${entry.action.toUpperCase()}
                             </span>
                         </td>
-                        <td class="py-2 px-4 text-sm text-gray-500">${details}</td>
                         <td class="py-2 px-4 text-sm text-gray-500">${entry.userId}</td>
-                        <td class="py-2 px-4 text-sm text-gray-500">${entry.imageUrl || 'N/A'}</td>
+                        <td class="py-2 px-4 text-sm text-gray-500">${entry.givenTo || 'N/A'}</td>
                     `;
                     historyTableBody.appendChild(row);
                 });
@@ -741,25 +753,34 @@
          */
         async function handleLogin(e) {
             e.preventDefault();
-            const enteredUserId = loginIdInput.value.trim();
-            if (!enteredUserId) {
-                showModal('Input Error', 'Please enter a valid user ID.');
-                return;
-            }
+            const email = loginEmailInput.value.trim();
+            const password = loginPasswordInput.value.trim();
 
             try {
-                const userCredential = await signInWithCustomToken(auth, initialAuthToken);
-                userDisplayId = enteredUserId;
-                userFirestoreId = userCredential.user.uid;
-                
-                userIdSpan.textContent = userDisplayId;
-                loginPageDiv.classList.add('hidden');
-                mainContentDiv.classList.remove('hidden');
-                
-                // Start listeners for both pages after successful login
-                setupInventoryListener();
-                setupHistoryListener();
+                // Sign in with email and password
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
 
+                // Check if the user's email is on the authorized list
+                const authorizedUsersRef = collection(db, `artifacts/${app_id}/public/data/authorized_users`);
+                const q = query(authorizedUsersRef, where('email', '==', email));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    userDisplayId = email; // Use email as the display ID
+                    userFirestoreId = user.uid; // Use the secure UID for data access
+                    
+                    userIdSpan.textContent = userDisplayId;
+                    loginPageDiv.classList.add('hidden');
+                    mainContentDiv.classList.remove('hidden');
+                    
+                    // Start listeners for both pages after successful login
+                    setupInventoryListener();
+                    setupHistoryListener();
+                } else {
+                    await signOut(auth);
+                    showModal('Access Denied', 'This email is not authorized to access the inventory system.');
+                }
             } catch (error) {
                 console.error("Login failed:", error);
                 showModal('Login Failed', `Error: ${error.message}`);
@@ -843,7 +864,7 @@
         // --- Authentication & Main Logic ---
         onAuthStateChanged(auth, async (user) => {
             loadingDiv.classList.add('hidden');
-            if (user && userDisplayId) {
+            if (user && userDisplayId) { // Check for both user object and a display ID
                 loginPageDiv.classList.add('hidden');
                 mainContentDiv.classList.remove('hidden');
                 setupInventoryListener();
@@ -853,12 +874,6 @@
                 mainContentDiv.classList.add('hidden');
             }
         });
-        
-        if (initialAuthToken) {
-            signInWithCustomToken(auth, initialAuthToken).catch(error => {
-                console.error("Initial authentication failed:", error);
-            });
-        }
     </script>
 
 </body>
