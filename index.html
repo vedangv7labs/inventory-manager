@@ -182,7 +182,7 @@
                                     <th class="py-3 px-4">Timestamp</th>
                                     <th class="py-3 px-4">Item Name</th>
                                     <th class="py-3 px-4">Action</th>
-                                    <th class="py-3 px-4">Details</th>
+                                    <th class="py-3 px-4">Quantity Changed</th>
                                     <th class="py-3 px-4">User ID</th>
                                     <th class="py-3 px-4">Given To</th>
                                 </tr>
@@ -430,21 +430,18 @@
                     const formattedDate = dateObject ? `${String(dateObject.getDate()).padStart(2, '0')}/${String(dateObject.getMonth() + 1).padStart(2, '0')}/${dateObject.getFullYear()}` : 'N/A';
                     const formattedTime = dateObject ? dateObject.toLocaleTimeString() : '';
                     const timestamp = `${formattedDate} ${formattedTime}`.trim();
-                    let details = '';
-                    switch(entry.action) {
-                        case 'add':
-                            details = `Added: ${entry.quantity_new} ${entry.unit_new || ''}`;
-                            break;
-                        case 'update':
-                            details = `Updated from ${entry.quantity_old} to ${entry.quantity_new} ${entry.unit_new || ''}`;
-                            break;
-                        case 'reduce':
-                            details = `Reduced from ${entry.quantity_old} to ${entry.quantity_new} ${entry.unit_new || ''}`;
-                            break;
-                        case 'delete':
-                            details = `Deleted: ${entry.quantity_old} ${entry.unit_old || ''}`;
-                            break;
+
+                    // Calculate quantity changed
+                    let quantityChanged = '';
+                    if (entry.action === 'add') {
+                        quantityChanged = `+${entry.quantity_new}`;
+                    } else if (entry.action === 'update' || entry.action === 'reduce') {
+                        const change = entry.quantity_new - entry.quantity_old;
+                        quantityChanged = change > 0 ? `+${change}` : change;
+                    } else if (entry.action === 'delete') {
+                        quantityChanged = `-${entry.quantity_old}`;
                     }
+
 
                     row.className = 'hover:bg-gray-50';
                     row.innerHTML = `
@@ -453,6 +450,11 @@
                         <td class="py-2 px-4 text-sm font-semibold">
                             <span class="${entry.action === 'add' ? 'text-green-600' : entry.action === 'update' ? 'text-blue-600' : entry.action === 'reduce' ? 'text-orange-500' : 'text-red-600'}">
                                 ${entry.action.toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="py-2 px-4 text-sm font-medium">
+                            <span class="${quantityChanged > 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${quantityChanged}
                             </span>
                         </td>
                         <td class="py-2 px-4 text-sm text-gray-500">${entry.userId}</td>
@@ -924,7 +926,7 @@
             if (user) {
                 // If a user is logged in, verify if they are authorized
                 const userEmail = user.email;
-                const authorizedUsersRef = collection(db, `artifacts/inventorydd-9f9fa/public/data/authorized_users`);
+                const authorizedUsersRef = collection(db, `artifacts/${app_id}/public/data/authorized_users`);
                 const q = query(authorizedUsersRef, where('email', '==', userEmail));
                 const querySnapshot = await getDocs(q);
 
