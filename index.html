@@ -919,11 +919,28 @@
         // --- Authentication & Main Logic ---
         onAuthStateChanged(auth, async (user) => {
             loadingDiv.classList.add('hidden');
-            if (user && userDisplayId) { // Check for both user object and a display ID
-                loginPageDiv.classList.add('hidden');
-                mainContentDiv.classList.remove('hidden');
-                setupInventoryListener();
-                setupHistoryListener();
+            if (user) {
+                // If a user is logged in, verify if they are authorized
+                const userEmail = user.email;
+                const authorizedUsersRef = collection(db, `artifacts/inventorydd-9f9fa/public/data/authorized_users`);
+                const q = query(authorizedUsersRef, where('email', '==', userEmail));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    userDisplayId = userEmail;
+                    userFirestoreId = user.uid;
+                    userIdSpan.textContent = userDisplayId;
+                    loginPageDiv.classList.add('hidden');
+                    mainContentDiv.classList.remove('hidden');
+                    setupInventoryListener();
+                    setupHistoryListener();
+                } else {
+                    // Not authorized, sign them out
+                    await signOut(auth);
+                    showModal('Access Denied', 'This email is not authorized to access the inventory system.');
+                    loginPageDiv.classList.remove('hidden');
+                    mainContentDiv.classList.add('hidden');
+                }
             } else {
                 loginPageDiv.classList.remove('hidden');
                 mainContentDiv.classList.add('hidden');
