@@ -776,12 +776,10 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Check if the user's email is on the authorized list
-                const authorizedUsersRef = collection(db, `artifacts/${app_id}/public/data/authorized_users`);
-                const q = query(authorizedUsersRef, where('email', '==', email));
-                const querySnapshot = await getDocs(q);
+                // TEMPORARY: Bypass authorized user check for testing. REMOVE THIS LATER.
+                const isAuthorized = true; // This line is for testing only.
 
-                if (!querySnapshot.empty) {
+                if (isAuthorized) {
                     userDisplayId = email; // Use email as the display ID
                     userFirestoreId = user.uid; // Use the secure UID for data access
                     
@@ -811,12 +809,10 @@
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
 
-                // Check if the user's email is on the authorized list
-                const authorizedUsersRef = collection(db, `artifacts/${app_id}/public/data/authorized_users`);
-                const q = query(authorizedUsersRef, where('email', '==', user.email));
-                const querySnapshot = await getDocs(q);
+                // TEMPORARY: Bypass authorized user check for testing. REMOVE THIS LATER.
+                const isAuthorized = true; // This line is for testing only.
 
-                if (!querySnapshot.empty) {
+                if (isAuthorized) {
                     userDisplayId = user.email; // Use email as the display ID
                     userFirestoreId = user.uid; // Use the secure UID for data access
                     
