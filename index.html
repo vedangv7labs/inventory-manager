@@ -261,6 +261,7 @@
                                        class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                     <option value="">-- Select quantity --</option>
                                 </select>
+                                <span id="reduce-unit-display" class="mt-2 text-sm font-medium text-gray-700"></span>
                             </div>
                         </div>
                         <div>
@@ -377,7 +378,7 @@
         const reduceForm = document.getElementById('reduce-form');
         const reduceItemNameSelect = document.getElementById('reduce-item-name');
         const reduceItemQuantitySelect = document.getElementById('reduce-item-quantity');
-        const reduceItemUnitInput = document.getElementById('reduce-item-unit');
+        const reduceUnitDisplay = document.getElementById('reduce-unit-display');
         const reduceGivenToInput = document.getElementById('reduce-given-to');
         const reduceBtn = document.getElementById('reduce-btn');
         
@@ -497,7 +498,7 @@
                         </td>
                         <td class="py-2 px-4 text-sm font-medium">
                             <span class="${quantityChanged > 0 ? 'text-green-600' : 'text-red-600'}">
-                                ${quantityChanged}
+                                ${quantityChanged} ${entry.unit_new || entry.unit_old || ''}
                             </span>
                         </td>
                         <td class="py-2 px-4 text-sm text-gray-500">${entry.userId}</td>
@@ -736,7 +737,6 @@
         function populateReduceForm() {
             // Clear existing options
             reduceItemNameSelect.innerHTML = '<option value="">-- Select an item --</option>';
-            reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
             
             // Populate item names
             currentInventoryItems.forEach(item => {
@@ -778,6 +778,7 @@
             const selectedOption = reduceItemNameSelect.options[reduceItemNameSelect.selectedIndex];
             if (!selectedOption) {
                 reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
+                reduceUnitDisplay.textContent = '';
                 return;
             }
             
@@ -791,6 +792,7 @@
                 option.textContent = i;
                 reduceItemQuantitySelect.appendChild(option);
             }
+            reduceUnitDisplay.textContent = unit || '';
         }
 
         function onAddStockItemNameChange() {
@@ -873,7 +875,8 @@
             } else if (form === addStockForm) {
                 addStockUnitInput.value = 'quantity';
             } else if (form === reduceForm) {
-                reduceItemUnitInput.value = 'quantity';
+                reduceUnitDisplay.textContent = '';
+                reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
             }
         }
 
