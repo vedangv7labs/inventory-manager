@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div id="app" class="container mx-auto p-4 sm:p-8">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">My Inventory</h1>
+            <p class="text-gray-600">Manage your business inventory with ease.</p>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="text-center p-4">
+            <div class="flex items-center justify-center space-x-2 animate-pulse">
+                <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
+            </div>
+            <p class="mt-2 text-gray-500">Loading...</p>
+        </div>
+
+        <!-- Login Page -->
+        <div id="login-page" class="hidden max-w-sm mx-auto bg-white p-8 rounded-xl shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">Login</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-id" class="block text-sm font-medium text-gray-700">Enter User ID</label>
+                    <input type="text" id="login-id" required
+                           class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    Login
+                </button>
+            </form>
+        </div>
+        
+        <!-- Main Content (Hidden until authenticated) -->
+        <div id="main-content" class="hidden">
+            <!-- User Info -->
+            <div class="mb-4 bg-white p-4 rounded-xl shadow-md flex justify-between items-center">
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">User ID:</span>
+                    <span id="user-id" class="break-all"></span>
+                </p>
+                <button id="logout-button" class="py-1 px-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-md shadow-sm hover:bg-gray-300 transition-colors">
+                    Logout
+                </button>
+            </div>
+
+            <!-- Navigation Bar -->
+            <div class="mb-8">
+                <ul class="flex justify-center space-x-2 sm:space-x-4 bg-white p-2 rounded-xl shadow-md">
+                    <li>
+                        <button id="current-stock-tab" class="py-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-lg focus:outline-none transition-colors">
+                            Current Stock
+                        </button>
+                    </li>
+                    <li>
+                        <button id="transaction-history-tab" class="py-2 px-4 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors">
+                            Transaction History
+                        </button>
+                    </li>
+                    <li>
+                        <button id="reduce-stock-tab" class="py-2 px-4 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none transition-colors">
+                            Reduce Stock
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Current Stock View -->
+            <div id="current-stock-view" class="active-view">
+                <!-- Add/Update Item Form -->
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h2 id="form-title" class="text-2xl font-semibold text-gray-800 mb-4">Add/Update Item</h2>
+                    <form id="item-form" class="space-y-4">
+                        <div>
+                            <label for="item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
+                            <input type="text" id="item-name" name="itemName" required
+                                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="item-quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+                            <div class="mt-1 flex space-x-2">
+                                <input type="number" id="item-quantity" name="itemQuantity" min="0" required
+                                       class="block w-2/3 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <select id="item-unit" name="itemUnit"
+                                        class="block w-1/3 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="quantity">Quantity</option>
+                                    <option value="box">Box</option>
+                                    <option value="kgs">Kgs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="item-image-url" class="block text-sm font-medium text-gray-700">Image URL (Optional)</label>
+                            <input type="url" id="item-image-url" name="itemImageUrl"
+                                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., https://example.com/item.jpg">
+                        </div>
+                        <div class="flex space-x-4">
+                            <button type="button" id="add-update-btn"
+                                    class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                Add/Update Item
+                            </button>
+                        </div>
+                        
+                    </form>
+                </div>
+
+                <!-- Inventory List -->
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Current Stock</h2>
+                    <div class="overflow-x-auto">
+                        <table id="inventory-table" class="min-w-full bg-white rounded-lg shadow-md hidden">
+                            <thead>
+                                <tr class="w-full border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Item Name</th>
+                                    <th class="py-3 px-4">Image</th>
+                                    <th class="py-3 px-4">Quantity</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-gray-200">
+                                <!-- Inventory rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="no-items" class="text-center text-gray-500 mt-8 hidden">
+                        <p>No inventory items yet. Add one above!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction History View -->
+            <div id="transaction-history-view" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Transaction History</h2>
+                    <div class="overflow-x-auto">
+                        <table id="history-table" class="min-w-full bg-white rounded-lg shadow-md hidden">
+                            <thead>
+                                <tr class="w-full border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Timestamp</th>
+                                    <th class="py-3 px-4">Item Name</th>
+                                    <th class="py-3 px-4">Action</th>
+                                    <th class="py-3 px-4">Details</th>
+                                    <th class="py-3 px-4">User ID</th>
+                                    <th class="py-3 px-4">Image URL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-gray-200">
+                                <!-- History rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="no-history" class="text-center text-gray-500 mt-8 hidden">
+                        <p>No transactions yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reduce Stock View -->
+            <div id="reduce-stock-view" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Reduce Stock</h2>
+                    <form id="reduce-form" class="space-y-4">
+                        <div>
+                            <label for="reduce-item-name" class="block text-sm font-medium text-gray-700">Item Name</label>
+                            <select id="reduce-item-name" name="itemName" required
+                                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">-- Select an item --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="reduce-item-quantity" class="block text-sm font-medium text-gray-700">Quantity to Reduce</label>
+                            <div class="mt-1 flex space-x-2">
+                                <select id="reduce-item-quantity" name="itemQuantity" required
+                                        class="block w-2/3 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">-- Select quantity --</option>
+                                </select>
+                                <select id="reduce-item-unit" name="itemUnit"
+                                        class="block w-1/3 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="quantity">Quantity</option>
+                                    <option value="box">Box</option>
+                                    <option value="kgs">Kgs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="reduce-given-to" class="block text-sm font-medium text-gray-700">Given To (Optional)</label>
+                            <input type="text" id="reduce-given-to" name="itemGivenTo"
+                                   class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., John Doe">
+                        </div>
+                        <button type="submit" id="reduce-btn"
+                                class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
+                            Reduce Quantity
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Modal for Alerts (replacing alert() and confirm()) -->
+        <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div id="modal-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4.75a8.998 8.998 0 01-1.393-2.31c-.347-.946-.51-1.942-.51-2.955 0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9a8.998 8.998 0 01-2.31-.393M12 21a9 9 0 100-18 9 9 0 000 18z"/>
+                        </svg>
+                    </div>
+                    <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900"></h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p id="modal-message" class="text-sm text-gray-500"></p>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="modal-ok-btn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, setLogLevel, serverTimestamp, query, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Globals & Initialization ---
+        
+        // This is a Firestore security rule guardrail
+        // Public data MUST be in /artifacts/{appId}/public/data/{collectionName}
+        // Private data MUST be in /artifacts/{appId}/users/{userId}/{collectionName}
+        const app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Set Firebase debug logs
+        setLogLevel('debug');
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        let userDisplayId = null;
+        let userFirestoreId = null;
+        let unsubscribe = null;
+        let unsubscribeHistory = null;
+        let currentEditingId = null;
+        let currentInventoryItems = [];
+
+        // --- DOM Elements ---
+        const loadingDiv = document.getElementById('loading');
+        const loginPageDiv = document.getElementById('login-page');
+        const loginForm = document.getElementById('login-form');
+        const loginIdInput = document.getElementById('login-id');
+        const mainContentDiv = document.getElementById('main-content');
+        const userIdSpan = document.getElementById('user-id');
+        const logoutButton = document.getElementById('logout-button');
+        const inventoryTable = document.getElementById('inventory-table');
+        const inventoryTableBody = document.getElementById('inventory-table-body');
+        const noItemsDiv = document.getElementById('no-items');
+        const itemForm = document.getElementById('item-form');
+        const formTitle = document.getElementById('form-title');
+        const addUpdateBtn = document.getElementById('add-update-btn');
+        const itemNameInput = document.getElementById('item-name');
+        const itemQuantityInput = document.getElementById('item-quantity');
+        const itemImageUrlInput = document.getElementById('item-image-url');
+        const itemUnitInput = document.getElementById('item-unit');
+        
+        const currentStockTab = document.getElementById('current-stock-tab');
+        const transactionHistoryTab = document.getElementById('transaction-history-tab');
+        const reduceStockTab = document.getElementById('reduce-stock-tab');
+        const currentStockView = document.getElementById('current-stock-view');
+        const transactionHistoryView = document.getElementById('transaction-history-view');
+        const reduceStockView = document.getElementById('reduce-stock-view');
+        const historyTable = document.getElementById('history-table');
+        const historyTableBody = document.getElementById('history-table-body');
+        const noHistoryDiv = document.getElementById('no-history');
+        
+        // Reduce stock form elements
+        const reduceForm = document.getElementById('reduce-form');
+        const reduceItemNameSelect = document.getElementById('reduce-item-name');
+        const reduceItemQuantitySelect = document.getElementById('reduce-item-quantity');
+        const reduceItemUnitInput = document.getElementById('reduce-item-unit');
+        const reduceGivenToInput = document.getElementById('reduce-given-to');
+        const reduceBtn = document.getElementById('reduce-btn');
+        
+        // Custom Modal
+        const modal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOkBtn = document.getElementById('modal-ok-btn');
+
+        // --- Functions ---
+        
+        /**
+         * Displays a custom modal with a message.
+         * @param {string} title The title of the modal.
+         * @param {string} message The message to display.
+         */
+        function showModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modal.classList.remove('hidden');
+        }
+
+        modalOkBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+
+        /**
+         * Renders the inventory items to the UI in a table.
+         * @param {Array<Object>} items The array of inventory item objects.
+         */
+        function renderInventory(items) {
+            currentInventoryItems = items;
+            inventoryTableBody.innerHTML = '';
+            if (items.length === 0) {
+                noItemsDiv.classList.remove('hidden');
+                inventoryTable.classList.add('hidden');
+            } else {
+                noItemsDiv.classList.add('hidden');
+                inventoryTable.classList.remove('hidden');
+                items.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    const imageUrl = item.imageUrl || 'https://placehold.co/50x50/e5e7eb/6b7280?text=No+Img';
+                    row.innerHTML = `
+                        <td class="py-2 px-4 flex items-center space-x-3">
+                            <span class="text-sm font-medium text-gray-900">${item.name}</span>
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500">
+                            <img src="${imageUrl}" alt="Item Image" class="w-12 h-12 object-cover rounded-md" onerror="this.onerror=null; this.src='https://placehold.co/50x50/e5e7eb/6b7280?text=No+Img';">
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500">${item.quantity} ${item.unit || ''}</td>
+                        <td class="py-2 px-4 text-sm text-right">
+                            <div class="flex justify-end space-x-2">
+                                <button class="update-btn px-3 py-1 text-xs font-medium text-white bg-green-500 rounded-md shadow-sm hover:bg-green-600 transition-colors" data-id="${item.id}">Edit</button>
+                                <button class="delete-btn px-3 py-1 text-xs font-medium text-white bg-red-500 rounded-md shadow-sm hover:bg-red-600 transition-colors" data-id="${item.id}">Delete</button>
+                            </div>
+                        </td>
+                    `;
+                    inventoryTableBody.appendChild(row);
+                });
+
+                document.querySelectorAll('.update-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.target.dataset.id;
+                        startUpdate(itemId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const itemId = e.target.dataset.id;
+                        deleteItem(itemId);
+                    });
+                });
+            }
+        }
+        
+        /**
+         * Renders transaction history to the UI in a table.
+         * @param {Array<Object>} history The array of history objects.
+         */
+        function renderHistory(history) {
+            historyTableBody.innerHTML = '';
+            if (history.length === 0) {
+                noHistoryDiv.classList.remove('hidden');
+                historyTable.classList.add('hidden');
+            } else {
+                noHistoryDiv.classList.add('hidden');
+                historyTable.classList.remove('hidden');
+                history.forEach(entry => {
+                    const row = document.createElement('tr');
+                    const dateObject = entry.timestamp ? new Date(entry.timestamp.seconds * 1000) : null;
+                    const formattedDate = dateObject ? `${String(dateObject.getDate()).padStart(2, '0')}/${String(dateObject.getMonth() + 1).padStart(2, '0')}/${dateObject.getFullYear()}` : 'N/A';
+                    const formattedTime = dateObject ? dateObject.toLocaleTimeString() : '';
+                    const timestamp = `${formattedDate} ${formattedTime}`.trim();
+                    let details = '';
+                    switch(entry.action) {
+                        case 'add':
+                            details = `Added: ${entry.quantity_new} ${entry.unit_new || ''}`;
+                            break;
+                        case 'update':
+                            details = `Updated from ${entry.quantity_old} to ${entry.quantity_new} ${entry.unit_new || ''}`;
+                            break;
+                        case 'reduce':
+                            details = `Reduced from ${entry.quantity_old} to ${entry.quantity_new} ${entry.unit_new || ''}`;
+                            break;
+                        case 'delete':
+                            details = `Deleted: ${entry.quantity_old} ${entry.unit_old || ''}`;
+                            break;
+                    }
+
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="py-2 px-4 text-sm text-gray-500">${timestamp}</td>
+                        <td class="py-2 px-4 text-sm text-gray-900">${entry.name}</td>
+                        <td class="py-2 px-4 text-sm font-semibold">
+                            <span class="${entry.action === 'add' ? 'text-green-600' : entry.action === 'update' ? 'text-blue-600' : entry.action === 'reduce' ? 'text-orange-500' : 'text-red-600'}">
+                                ${entry.action.toUpperCase()}
+                            </span>
+                        </td>
+                        <td class="py-2 px-4 text-sm text-gray-500">${details}</td>
+                        <td class="py-2 px-4 text-sm text-gray-500">${entry.userId}</td>
+                        <td class="py-2 px-4 text-sm text-gray-500">${entry.imageUrl || 'N/A'}</td>
+                    `;
+                    historyTableBody.appendChild(row);
+                });
+            }
+        }
+
+        /**
+         * Sets up real-time listener for inventory data.
+         */
+        function setupInventoryListener() {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+            if (userFirestoreId) {
+                // Private data collection path for this user, using the authenticated UID
+                const inventoryRef = collection(db, `artifacts/${app_id}/users/${userFirestoreId}/inventory`);
+                
+                unsubscribe = onSnapshot(inventoryRef, (snapshot) => {
+                    const inventoryItems = [];
+                    snapshot.forEach(doc => {
+                        inventoryItems.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderInventory(inventoryItems);
+                    populateReduceForm();
+                }, (error) => {
+                    console.error("Error fetching inventory: ", error);
+                    showModal('Error', 'Failed to fetch inventory data. Please check your internet connection and try again.');
+                });
+            }
+        }
+
+        /**
+         * Sets up real-time listener for transaction history.
+         */
+        function setupHistoryListener() {
+            if (unsubscribeHistory) {
+                unsubscribeHistory();
+            }
+            if (userFirestoreId) {
+                const historyRef = collection(db, `artifacts/${app_id}/users/${userFirestoreId}/history`);
+                const q = query(historyRef, orderBy('timestamp', 'desc'));
+                
+                unsubscribeHistory = onSnapshot(q, (snapshot) => {
+                    const historyEntries = [];
+                    snapshot.forEach(doc => {
+                        historyEntries.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderHistory(historyEntries);
+                }, (error) => {
+                    console.error("Error fetching history: ", error);
+                    showModal('Error', 'Failed to fetch transaction history. Please check your internet connection and try again.');
+                });
+            }
+        }
+
+        /**
+         * Adds an entry to the history collection.
+         * @param {Object} data The history data to save.
+         */
+        async function addHistoryEntry(data) {
+            if (!userFirestoreId) return;
+            const historyRef = collection(db, `artifacts/${app_id}/users/${userFirestoreId}/history`);
+            await addDoc(historyRef, {
+                ...data,
+                userId: userDisplayId,
+                timestamp: serverTimestamp()
+            });
+        }
+
+
+        /**
+         * Handles form submission to add or update an item.
+         */
+        async function handleAddUpdate(e) {
+            e.preventDefault();
+            const itemName = itemNameInput.value.trim();
+            const itemQuantity = parseInt(itemQuantityInput.value, 10);
+            const itemUnit = itemUnitInput.value;
+            const itemImageUrl = itemImageUrlInput.value.trim();
+
+            if (!itemName || isNaN(itemQuantity) || itemQuantity < 0) {
+                showModal('Validation Error', 'Please fill out all fields with valid data.');
+                return;
+            }
+
+            try {
+                const inventoryRef = collection(db, `artifacts/${app_id}/users/${userFirestoreId}/inventory`);
+                const existingItemQuery = await getDocs(query(inventoryRef, where('name', '==', itemName)));
+                
+                if (!existingItemQuery.empty) {
+                    const itemDoc = existingItemQuery.docs[0];
+                    const oldData = itemDoc.data();
+                    const newQuantity = oldData.quantity + itemQuantity;
+                    
+                    await updateDoc(itemDoc.ref, {
+                        quantity: newQuantity,
+                        unit: itemUnit,
+                        imageUrl: itemImageUrl
+                    });
+
+                    await addHistoryEntry({
+                        action: 'update',
+                        name: itemName,
+                        quantity_old: oldData.quantity,
+                        unit_old: oldData.unit,
+                        quantity_new: newQuantity,
+                        unit_new: itemUnit,
+                        imageUrl: itemImageUrl,
+                        itemId: itemDoc.id
+                    });
+                    showModal('Success', 'Item quantity updated successfully!');
+                } else {
+                    const newDocRef = await addDoc(inventoryRef, {
+                        name: itemName,
+                        quantity: itemQuantity,
+                        unit: itemUnit,
+                        imageUrl: itemImageUrl
+                    });
+                    await addHistoryEntry({
+                        action: 'add',
+                        name: itemName,
+                        quantity_new: itemQuantity,
+                        unit_new: itemUnit,
+                        imageUrl: itemImageUrl,
+                        itemId: newDocRef.id
+                    });
+                    showModal('Success', 'New item added to inventory!');
+                }
+                resetForm(itemForm);
+            } catch (error) {
+                console.error("Error writing document: ", error);
+                showModal('Error', `Failed to save item. Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Handles reducing an item's quantity.
+         */
+        async function handleReduce(e) {
+            e.preventDefault();
+            const itemName = reduceItemNameSelect.value.trim();
+            const quantityToReduce = parseInt(reduceItemQuantitySelect.value, 10);
+            const itemUnit = reduceItemUnitInput.value;
+            const givenTo = reduceGivenToInput.value.trim();
+
+            if (!itemName || isNaN(quantityToReduce) || quantityToReduce <= 0) {
+                showModal('Validation Error', 'Please select an item and a positive quantity to reduce.');
+                return;
+            }
+            
+            try {
+                const inventoryRef = collection(db, `artifacts/${app_id}/users/${userFirestoreId}/inventory`);
+                const existingItemQuery = await getDocs(query(inventoryRef, where('name', '==', itemName)));
+                
+                if (!existingItemQuery.empty) {
+                    const itemDoc = existingItemQuery.docs[0];
+                    const oldData = itemDoc.data();
+                    const newQuantity = oldData.quantity - quantityToReduce;
+                    
+                    if (newQuantity > 0) {
+                        await updateDoc(itemDoc.ref, {
+                            quantity: newQuantity,
+                            unit: itemUnit
+                        });
+                        
+                        await addHistoryEntry({
+                            action: 'reduce',
+                            name: itemName,
+                            quantity_old: oldData.quantity,
+                            unit_old: oldData.unit,
+                            quantity_new: newQuantity,
+                            unit_new: itemUnit,
+                            givenTo: givenTo,
+                            itemId: itemDoc.id
+                        });
+                        showModal('Success', `Quantity reduced successfully! New quantity: ${newQuantity}`);
+                    } else {
+                        // If quantity is zero or less, delete the item
+                        await deleteDoc(itemDoc.ref);
+                        await addHistoryEntry({
+                            action: 'delete',
+                            name: itemName,
+                            quantity_old: oldData.quantity,
+                            unit_old: oldData.unit,
+                            givenTo: givenTo,
+                            itemId: itemDoc.id
+                        });
+                        showModal('Item Removed', `Item quantity reached zero. Item deleted.`);
+                    }
+                } else {
+                    showModal('Error', 'Item not found. Cannot reduce quantity.');
+                }
+                resetForm(reduceForm);
+            } catch (error) {
+                console.error("Error reducing quantity: ", error);
+                showModal('Error', `Failed to reduce quantity. Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Populates the item name and quantity dropdowns on the reduce stock page.
+         */
+        function populateReduceForm() {
+            // Clear existing options
+            reduceItemNameSelect.innerHTML = '<option value="">-- Select an item --</option>';
+            reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
+            
+            // Populate item names
+            currentInventoryItems.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.quantity = item.quantity;
+                option.dataset.unit = item.unit;
+                reduceItemNameSelect.appendChild(option);
+            });
+            
+            // Add event listener to populate quantity on item selection
+            reduceItemNameSelect.addEventListener('change', () => {
+                const selectedOption = reduceItemNameSelect.options[reduceItemNameSelect.selectedIndex];
+                const quantity = parseInt(selectedOption.dataset.quantity, 10);
+                const unit = selectedOption.dataset.unit;
+                
+                reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
+                for (let i = 1; i <= quantity; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    reduceItemQuantitySelect.appendChild(option);
+                }
+                
+                reduceItemUnitInput.value = unit || 'quantity';
+            });
+        }
+
+
+        /**
+         * Deletes an item from the database.
+         * @param {string} itemId The ID of the item to delete.
+         */
+        async function deleteItem(itemId) {
+            const originalOkHandler = modalOkBtn.onclick;
+            showModal('Confirm Deletion', 'Are you sure you want to delete this item?');
+            modalOkBtn.textContent = 'Yes, Delete';
+            
+            const handleDeletion = async () => {
+                try {
+                    const itemDocRef = doc(db, `artifacts/${app_id}/users/${userFirestoreId}/inventory`, itemId);
+                    const docSnap = await getDoc(itemDocRef);
+                    const oldData = docSnap.data();
+
+                    await deleteDoc(itemDocRef);
+                    await addHistoryEntry({
+                        action: 'delete',
+                        name: oldData.name,
+                        quantity_old: oldData.quantity,
+                        unit_old: oldData.unit,
+                        itemId: itemId
+                    });
+
+                    showModal('Success', 'Item deleted successfully!');
+                } catch (error) {
+                    console.error("Error removing document: ", error);
+                    showModal('Error', `Failed to delete item. Error: ${error.message}`);
+                }
+                modalOkBtn.textContent = 'OK';
+                modalOkBtn.onclick = originalOkHandler;
+            };
+            
+            modalOkBtn.onclick = handleDeletion;
+        }
+
+        /**
+         * Populates the form with item data for editing.
+         * @param {string} itemId The ID of the item to edit.
+         */
+        async function startUpdate(itemId) {
+            const itemDocRef = doc(db, `artifacts/${app_id}/users/${userFirestoreId}/inventory`, itemId);
+            try {
+                const docSnap = await getDoc(itemDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    itemNameInput.value = data.name;
+                    itemQuantityInput.value = data.quantity;
+                    itemUnitInput.value = data.unit || 'quantity';
+                    itemImageUrlInput.value = data.imageUrl || '';
+                    switchView('current-stock-view');
+                } else {
+                    showModal('Error', 'Item not found.');
+                }
+            } catch (error) {
+                console.error("Error fetching item for update: ", error);
+                showModal('Error', `Failed to load item for editing. Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Resets the form to its initial state.
+         */
+        function resetForm(form) {
+            form.reset();
+            if (form === itemForm) {
+                itemUnitInput.value = 'quantity';
+            } else if (form === reduceForm) {
+                reduceItemUnitInput.value = 'quantity';
+            }
+        }
+
+        /**
+         * Handles the login process.
+         */
+        async function handleLogin(e) {
+            e.preventDefault();
+            const enteredUserId = loginIdInput.value.trim();
+            if (!enteredUserId) {
+                showModal('Input Error', 'Please enter a valid user ID.');
+                return;
+            }
+
+            try {
+                const userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                userDisplayId = enteredUserId;
+                userFirestoreId = userCredential.user.uid;
+                
+                userIdSpan.textContent = userDisplayId;
+                loginPageDiv.classList.add('hidden');
+                mainContentDiv.classList.remove('hidden');
+                
+                // Start listeners for both pages after successful login
+                setupInventoryListener();
+                setupHistoryListener();
+
+            } catch (error) {
+                console.error("Login failed:", error);
+                showModal('Login Failed', `Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Logs the user out.
+         */
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                userDisplayId = null;
+                userFirestoreId = null;
+                loginPageDiv.classList.remove('hidden');
+                mainContentDiv.classList.add('hidden');
+                resetForm(itemForm);
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+                if (unsubscribeHistory) {
+                    unsubscribeHistory();
+                }
+            } catch (error) {
+                console.error("Logout failed:", error);
+                showModal('Logout Failed', `Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Switches the view between Current Stock and Transaction History.
+         * @param {string} viewId The ID of the view to show ('current-stock-view' or 'transaction-history-view').
+         */
+        function switchView(viewId) {
+            const views = [currentStockView, transactionHistoryView, reduceStockView];
+            const tabs = [currentStockTab, transactionHistoryTab, reduceStockTab];
+
+            views.forEach(view => {
+                view.classList.add('hidden');
+            });
+            tabs.forEach(tab => {
+                tab.classList.remove('bg-blue-600', 'text-white');
+                tab.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            });
+
+            document.getElementById(viewId).classList.remove('hidden');
+            const activeTab = document.getElementById(viewId.replace('-view', '-tab'));
+            activeTab.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+            activeTab.classList.add('bg-blue-600', 'text-white');
+        }
+
+        // --- Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        addUpdateBtn.addEventListener('click', handleAddUpdate);
+        reduceForm.addEventListener('submit', handleReduce);
+        logoutButton.addEventListener('click', handleLogout);
+        currentStockTab.addEventListener('click', () => switchView('current-stock-view'));
+        transactionHistoryTab.addEventListener('click', () => switchView('transaction-history-view'));
+        reduceStockTab.addEventListener('click', () => {
+            switchView('reduce-stock-view');
+            populateReduceForm();
+        });
+        reduceItemNameSelect.addEventListener('change', () => {
+            const selectedItemName = reduceItemNameSelect.value;
+            if (selectedItemName) {
+                const selectedItem = currentInventoryItems.find(item => item.name === selectedItemName);
+                if (selectedItem) {
+                    reduceItemQuantitySelect.innerHTML = '';
+                    for (let i = 1; i <= selectedItem.quantity; i++) {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = i;
+                        reduceItemQuantitySelect.appendChild(option);
+                    }
+                }
+            } else {
+                reduceItemQuantitySelect.innerHTML = '<option value="">-- Select quantity --</option>';
+            }
+        });
+
+        // --- Authentication & Main Logic ---
+        onAuthStateChanged(auth, async (user) => {
+            loadingDiv.classList.add('hidden');
+            if (user && userDisplayId) {
+                loginPageDiv.classList.add('hidden');
+                mainContentDiv.classList.remove('hidden');
+                setupInventoryListener();
+                setupHistoryListener();
+            } else {
+                loginPageDiv.classList.remove('hidden');
+                mainContentDiv.classList.add('hidden');
+            }
+        });
+        
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                console.error("Initial authentication failed:", error);
+            });
+        }
+    </script>
+
+</body>
+</html>
